@@ -1,0 +1,19 @@
+#!/usr/local/bin/ruby
+
+require "json"
+require "tempfile"
+require "fileutils"
+
+args = ARGV.any? ? ARGV : $stdin.read.split
+data = JSON.dump(args.map(&:to_i))
+
+template = File.read(File.expand_path("../../lib/templates/line.html", __FILE__))
+
+dir = File.expand_path("~/.hc")
+FileUtils.mkdir_p(dir)
+path = File.join(dir, "graph.html")
+
+File.open(path, "w") do |file|
+  file.puts template.sub("$data$", data)
+  `open #{file.path}`
+end
