@@ -1,11 +1,31 @@
 #!/usr/local/bin/ruby
 
 require "json"
-require "tempfile"
 require "fileutils"
 
-args = ARGV.any? ? ARGV : $stdin.read.split
-data = JSON.dump(args.map(&:to_i))
+if ARGV.any?
+  args = []
+
+  if ARGV.first == "-x"
+    ARGV.shift
+    until ARGV.empty?
+      args << ARGV.shift(ARGV.index("-x") || ARGV.size)
+      ARGV.shift
+    end
+  else
+    args << ARGV
+  end
+else
+  args << $stdin.read.split
+end
+
+data = { series: [] }
+
+args.each do |axis|
+  data[:series] << { data: axis.map(&:to_i) }
+end
+
+series = JSON.dump(data)[1..-2]
 
 template = File.read(File.expand_path("../../lib/templates/line.html", __FILE__))
 
@@ -14,6 +34,6 @@ FileUtils.mkdir_p(dir)
 path = File.join(dir, "graph.html")
 
 File.open(path, "w") do |file|
-  file.puts template.sub("$data$", data)
+  file.puts template.sub("$series$", series)
   `open #{file.path}`
 end
